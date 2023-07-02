@@ -65,11 +65,13 @@ var GetScheduler = NewComponent(
 	WithInit(func(instance *Scheduler) error {
 		return instance.Start()
 	}),
-	AsWorker[*Scheduler](),
 )
 
 func TestDI(t *testing.T) {
-	app, err := Build(GetApplication)
+	app, err := Build(
+		GetApplication,
+		WithWorker(GetScheduler),
+	)
 	require.NoError(t, err)
 	defer app.Done()
 	app.Start()
