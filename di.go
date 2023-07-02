@@ -120,7 +120,7 @@ func AsWorker[T any]() Option[T] {
 	}
 }
 
-func NewComponent[T interface{}](
+func NewComponent[T any](
 	constructor func() T,
 	options ...Option[T],
 ) func() T {
