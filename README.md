@@ -3,9 +3,9 @@
 This is a minimalistic idiomatic dependency injection framework for Golang. It is inspired by new opportunities of Go 1.7. 
 
 Advantages:
+- Tiny
 - No reflection
 - No code generation
-- No magic
 - No type assertions
 
 Who needs it?
