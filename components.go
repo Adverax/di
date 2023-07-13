@@ -1,6 +1,7 @@
 package di
 
 import (
+	"fmt"
 	"reflect"
 )
 
@@ -33,8 +34,18 @@ func NewComponent[T any](
 	}
 
 	var instance T
+	var active bool
 
 	return func() T {
+		if active {
+			panic(fmt.Errorf("circular dependency detected"))
+		}
+
+		active = true
+		defer func() {
+			active = false
+		}()
+
 		if isZeroVal(instance) {
 			instance = constructor()
 			application.addComponent(newComponent(instance, opts))
