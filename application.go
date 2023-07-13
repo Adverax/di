@@ -73,14 +73,17 @@ type AppOptions struct {
 
 type AppOption func(opts *AppOptions)
 
-func WithWorker[T any](builder func() T) AppOption {
+func newBuilder[T any](b func() T) func() {
+	return func() {
+		_ = b()
+	}
+}
+
+func WithWorker[T any](builder ...func() T) AppOption {
 	return func(opts *AppOptions) {
-		opts.workers = append(
-			opts.workers,
-			func() {
-				_ = builder()
-			},
-		)
+		for _, b := range builder {
+			opts.workers = append(opts.workers, newBuilder(b))
+		}
 	}
 }
 
