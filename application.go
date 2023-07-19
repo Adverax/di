@@ -4,12 +4,25 @@ import (
 	"sync"
 )
 
+type State int
+
+const (
+	StateBuild State = iota
+	StateInit
+	StateDone
+)
+
 type component struct {
-	init func() error
-	done func()
+	state State
+	init  func() error
+	done  func()
 }
 
 func (c *component) runInit() error {
+	if c.state != StateBuild {
+		return nil
+	}
+	c.state = StateInit
 	if c.init == nil {
 		return nil
 	}
@@ -17,6 +30,10 @@ func (c *component) runInit() error {
 }
 
 func (c *component) runDone() {
+	if c.state != StateInit {
+		return
+	}
+	c.state = StateDone
 	if c.done == nil {
 		return
 	}
@@ -84,6 +101,12 @@ func WithWorker[T any](builder ...func() T) AppOption {
 		for _, b := range builder {
 			opts.workers = append(opts.workers, newBuilder(b))
 		}
+	}
+}
+
+func WithDaemon(daemon func()) AppOption {
+	return func(opts *AppOptions) {
+		opts.workers = append(opts.workers, daemon)
 	}
 }
 
