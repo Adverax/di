@@ -104,9 +104,9 @@ func WithWorker[T any](builder ...func() T) AppOption {
 	}
 }
 
-func WithDaemon(daemon func()) AppOption {
+func WithDaemon(daemon ...func()) AppOption {
 	return func(opts *AppOptions) {
-		opts.workers = append(opts.workers, daemon)
+		opts.workers = append(opts.workers, daemon...)
 	}
 }
 
