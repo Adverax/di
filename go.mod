@@ -1,4 +1,4 @@
-module my/di
+module di
 
 go 1.19
 
