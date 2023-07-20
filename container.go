@@ -5,7 +5,23 @@ import (
 	"reflect"
 )
 
-// Build iterate by fields of structure environment and for each field search in the container constructor of component.
+// Check checks all fields of structure c for nil.
+// It used reflection for this.
+// If field is nil, then panic.
+func Check(s interface{}) {
+	v := reflect.ValueOf(s)
+	if v.Kind() == reflect.Ptr {
+		v = v.Elem()
+	}
+	for i := 0; i < v.NumField(); i++ {
+		f := v.Field(i)
+		if f.Type().Kind() == reflect.Pointer && f.IsNil() {
+			panic(fmt.Sprintf("field %s is nil", v.Type().Field(i).Name))
+		}
+	}
+}
+
+// Resolve iterate by fields of structure environment and for each field search in the container constructor of component.
 // If constructor found, then it calls and return value of constructor writes to the field of structure environment.
 func Resolve(container, environment interface{}) {
 	e := reflect.ValueOf(environment)
@@ -19,19 +35,22 @@ func Resolve(container, environment interface{}) {
 	for i := 0; i < e.NumField(); i++ {
 		f := e.Field(i)
 		if f.CanSet() {
-			v := findMatchValue(container, f.Type())
+			v := findValue(container, f.Type())
 			if v.IsValid() {
 				f.Set(v)
 			}
 		}
 	}
-	CheckContainer(container)
+	Check(environment)
 }
 
-func findMatchValue(c interface{}, typ reflect.Type) reflect.Value {
+func findValue(c interface{}, typ reflect.Type) reflect.Value {
 	v := reflect.ValueOf(c)
 	if v.Kind() == reflect.Ptr {
 		v = v.Elem()
+	}
+	if v.Kind() != reflect.Struct {
+		panic("container must be struct")
 	}
 	for i := 0; i < v.NumField(); i++ {
 		f := v.Field(i)
@@ -44,20 +63,4 @@ func findMatchValue(c interface{}, typ reflect.Type) reflect.Value {
 	}
 	return reflect.Value{}
 
-}
-
-// CheckContainer checks all fields of structure c for nil.
-// It used reflection for this.
-// If field is nil, then panic.
-func CheckContainer(c interface{}) {
-	v := reflect.ValueOf(c)
-	if v.Kind() == reflect.Ptr {
-		v = v.Elem()
-	}
-	for i := 0; i < v.NumField(); i++ {
-		f := v.Field(i)
-		if f.Type().Kind() == reflect.Pointer && f.IsNil() {
-			panic(fmt.Sprintf("field %s is nil", v.Type().Field(i).Name))
-		}
-	}
 }
