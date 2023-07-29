@@ -24,56 +24,70 @@ func WithDone[T any](finalizer func()) Option[T] {
 	}
 }
 
-type Builder[T any] interface {
-	Build() (T, error)
-}
-
 func NewComponent[T any](
-	constructor func() (T, error),
+	builder func() (T, error),
 	options ...Option[T],
 ) func() T {
-	var opts Options[T]
+	c := controller[T]{
+		builder: builder,
+	}
+
 	for _, o := range options {
-		o(&opts)
+		o(&c.options)
 	}
 
-	var instance T
-	var active bool
-
-	return func() T {
-		if active {
-			panic(fmt.Errorf("circular dependency detected"))
-		}
-
-		active = true
-		defer func() {
-			active = false
-		}()
-
-		if isZeroVal(instance) {
-			var err error
-			instance, err = constructor()
-			if err != nil {
-				panic(err)
-			}
-			application.addComponent(newComponent(instance, opts))
-		}
-
-		return instance
-	}
+	return c.get
 }
 
-func newComponent[T any](instance T, opts Options[T]) *component {
+type controller[T any] struct {
+	builder  func() (T, error)
+	options  Options[T]
+	active   bool
+	instance T
+}
+
+func (c *controller[T]) enter() {
+	if c.active {
+		panic(fmt.Errorf("circular dependency detected"))
+	}
+	c.active = true
+}
+
+func (c *controller[T]) leave() {
+	c.active = false
+}
+
+func (c *controller[T]) get() T {
+	c.enter()
+	defer c.leave()
+
+	if isZeroVal(c.instance) {
+		c.instance = c.newInstance()
+		application.addComponent(c.newComponent())
+	}
+
+	return c.instance
+}
+
+func (c *controller[T]) newInstance() T {
+	instance, err := c.builder()
+	if err != nil {
+		panic(err)
+	}
+	return instance
+}
+
+func (c *controller[T]) newComponent() *component {
 	return &component{
 		init: func() error {
-			if opts.init != nil {
-				return opts.init(instance)
+			if c.options.init != nil {
+				return c.options.init(c.instance)
 			}
 			return nil
 		},
 		done: func() {
-			if opts.done != nil {
-				opts.done()
+			if c.options.done != nil {
+				c.options.done()
 			}
 		},
 	}
