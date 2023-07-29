@@ -29,7 +29,7 @@ type Builder[T any] interface {
 }
 
 func NewComponent[T any](
-	constructor func() T,
+	constructor func() (T, error),
 	options ...Option[T],
 ) func() T {
 	var opts Options[T]
@@ -51,40 +51,8 @@ func NewComponent[T any](
 		}()
 
 		if isZeroVal(instance) {
-			instance = constructor()
-			application.addComponent(newComponent(instance, opts))
-		}
-
-		return instance
-	}
-}
-
-func NewComponentWithBuilder[T any](
-	constructor func() Builder[T],
-	options ...Option[T],
-) func() T {
-	var opts Options[T]
-	for _, o := range options {
-		o(&opts)
-	}
-
-	var instance T
-	var active bool
-
-	return func() T {
-		if active {
-			panic(fmt.Errorf("circular dependency detected"))
-		}
-
-		active = true
-		defer func() {
-			active = false
-		}()
-
-		if isZeroVal(instance) {
-			builder := constructor()
 			var err error
-			instance, err = builder.Build()
+			instance, err = constructor()
 			if err != nil {
 				panic(err)
 			}

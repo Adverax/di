@@ -90,9 +90,9 @@ type AppOptions struct {
 
 type AppOption func(opts *AppOptions)
 
-func newBuilder[T any](b func() T) func() {
+func newBuilder[T any](builder func() T) func() {
 	return func() {
-		_ = b()
+		_ = builder()
 	}
 }
 

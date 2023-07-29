@@ -35,32 +35,32 @@ func (a *MyApplication) Start() {
 
 // Declaration of components
 var GetApplication = NewComponent(
-	func() *MyApplication {
+	func() (*MyApplication, error) {
 		return &MyApplication{
 			App:        GetApp(),
 			Events:     GetEvents(),
 			Repository: GetRepository(),
-		}
+		}, nil
 	},
 )
 
 var GetEvents = NewComponent(
-	func() *MyEvents {
-		return &MyEvents{}
+	func() (*MyEvents, error) {
+		return &MyEvents{}, nil
 	},
 )
 
 var GetRepository = NewComponent(
-	func() *MyRepository {
+	func() (*MyRepository, error) {
 		return &MyRepository{
 			Events: GetEvents(),
-		}
+		}, nil
 	},
 )
 
 var GetScheduler = NewComponent(
-	func() *Scheduler {
-		return &Scheduler{}
+	func() (*Scheduler, error) {
+		return &Scheduler{}, nil
 	},
 	WithInit(func(instance *Scheduler) error {
 		return instance.Start()

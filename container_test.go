@@ -18,11 +18,11 @@ type Container struct {
 
 func newContainer() *Container {
 	c := new(Container)
-	c.Component1 = NewComponent(func() *MyComponent1 {
-		return new(MyComponent1)
+	c.Component1 = NewComponent(func() (*MyComponent1, error) {
+		return new(MyComponent1), nil
 	})
-	c.Component2 = NewComponent(func() *MyComponent2 {
-		return new(MyComponent2)
+	c.Component2 = NewComponent(func() (*MyComponent2, error) {
+		return new(MyComponent2), nil
 	})
 	return c
 }
