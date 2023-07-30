@@ -32,7 +32,7 @@ func WithDone[T any](finalizer func(instance T)) Option[T] {
 	}
 }
 
-func WithMethodInit[T Initializer]() Option[T] {
+func UseInit[T Initializer]() Option[T] {
 	return func(options *Options[T]) {
 		options.init = func(instance T) error {
 			return instance.Init()
@@ -40,7 +40,7 @@ func WithMethodInit[T Initializer]() Option[T] {
 	}
 }
 
-func WithMethodDone[T Finalizer]() Option[T] {
+func UseDone[T Finalizer]() Option[T] {
 	return func(options *Options[T]) {
 		options.done = func(instance T) {
 			instance.Done()
