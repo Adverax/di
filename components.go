@@ -5,11 +5,19 @@ import (
 	"reflect"
 )
 
+type Initializer interface {
+	Init() error
+}
+
+type Finalizer interface {
+	Done()
+}
+
 type Option[T any] func(options *Options[T])
 
 type Options[T any] struct {
 	init func(instance T) error
-	done func()
+	done func(instance T)
 }
 
 func WithInit[T any](initializer func(instance T) error) Option[T] {
@@ -18,9 +26,25 @@ func WithInit[T any](initializer func(instance T) error) Option[T] {
 	}
 }
 
-func WithDone[T any](finalizer func()) Option[T] {
+func WithDone[T any](finalizer func(instance T)) Option[T] {
 	return func(options *Options[T]) {
 		options.done = finalizer
+	}
+}
+
+func WithMethodInit[T Initializer]() Option[T] {
+	return func(options *Options[T]) {
+		options.init = func(instance T) error {
+			return instance.Init()
+		}
+	}
+}
+
+func WithMethodDone[T Finalizer]() Option[T] {
+	return func(options *Options[T]) {
+		options.done = func(instance T) {
+			instance.Done()
+		}
 	}
 }
 
@@ -87,7 +111,7 @@ func (c *controller[T]) newComponent() *component {
 		},
 		done: func() {
 			if c.options.done != nil {
-				c.options.done()
+				c.options.done(c.instance)
 			}
 		},
 	}
