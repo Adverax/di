@@ -5,6 +5,16 @@ import (
 	"reflect"
 )
 
+type logger struct{}
+
+func (l *logger) Log(msg string) {
+	// empty
+}
+
+var Logger interface {
+	Log(msg string)
+} = new(logger)
+
 type Initializer interface {
 	Init() error
 }
@@ -16,8 +26,16 @@ type Finalizer interface {
 type Option[T any] func(options *Options[T])
 
 type Options[T any] struct {
-	init func(instance T) error
-	done func(instance T)
+	name     string
+	priority int
+	init     func(instance T) error
+	done     func(instance T)
+}
+
+func WithPriority[T any](priority int) Option[T] {
+	return func(options *Options[T]) {
+		options.priority = priority
+	}
 }
 
 func WithInit[T any](initializer func(instance T) error) Option[T] {
@@ -49,10 +67,14 @@ func UseDone[T Finalizer]() Option[T] {
 }
 
 func NewComponent[T any](
+	name string,
 	builder func() (T, error),
 	options ...Option[T],
 ) func() T {
 	c := controller[T]{
+		options: Options[T]{
+			name: name,
+		},
 		builder: builder,
 	}
 
@@ -94,15 +116,21 @@ func (c *controller[T]) get() T {
 }
 
 func (c *controller[T]) newInstance() T {
+	if c.options.name != "" {
+		Logger.Log(fmt.Sprintf("%s: building", c.options.name))
+	}
+
 	instance, err := c.builder()
 	if err != nil {
-		panic(err)
+		panic(fmt.Errorf("%s: %w", c.options.name, err))
 	}
 	return instance
 }
 
 func (c *controller[T]) newComponent() *component {
 	return &component{
+		name:     c.options.name,
+		priority: c.options.priority,
 		init: func() error {
 			if c.options.init != nil {
 				return c.options.init(c.instance)

@@ -1,6 +1,8 @@
 package di
 
 import (
+	"fmt"
+	"sort"
 	"sync"
 )
 
@@ -13,9 +15,11 @@ const (
 )
 
 type component struct {
-	state State
-	init  func() error
-	done  func()
+	state    State
+	init     func() error
+	done     func()
+	priority int
+	name     string
 }
 
 func (c *component) runInit() error {
@@ -26,7 +30,12 @@ func (c *component) runInit() error {
 	if c.init == nil {
 		return nil
 	}
-	return c.init()
+	err := c.init()
+	if err != nil {
+		return fmt.Errorf("initialization error %w", err)
+	}
+	Logger.Log(fmt.Sprintf("%s: initialized", c.name))
+	return nil
 }
 
 func (c *component) runDone() {
@@ -38,11 +47,26 @@ func (c *component) runDone() {
 		return
 	}
 	c.done()
+	Logger.Log(fmt.Sprintf("%s: done", c.name))
+}
+
+type components []*component
+
+func (c components) Len() int {
+	return len(c)
+}
+
+func (c components) Less(i, j int) bool {
+	return c[i].priority < c[j].priority
+}
+
+func (c components) Swap(i, j int) {
+	c[i], c[j] = c[j], c[i]
 }
 
 type app struct {
 	mx         sync.Mutex
-	components []*component
+	components components
 }
 
 func (a *app) addComponent(component *component) {
@@ -56,9 +80,11 @@ func (a *app) Init() {
 	a.mx.Lock()
 	defer a.mx.Unlock()
 
+	sort.Sort(&a.components)
+
 	for _, c := range a.components {
 		if err := c.runInit(); err != nil {
-			panic(err)
+			panic(fmt.Errorf("%s: %w", c.name, err))
 		}
 	}
 }

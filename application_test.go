@@ -35,6 +35,7 @@ func (a *MyApplication) Start() {
 
 // Declaration of components
 var GetApplication = NewComponent(
+	"MyApplication",
 	func() (*MyApplication, error) {
 		return &MyApplication{
 			App:        GetApp(),
@@ -45,12 +46,14 @@ var GetApplication = NewComponent(
 )
 
 var GetEvents = NewComponent(
+	"MyEvents",
 	func() (*MyEvents, error) {
 		return &MyEvents{}, nil
 	},
 )
 
 var GetRepository = NewComponent(
+	"MyRepository",
 	func() (*MyRepository, error) {
 		return &MyRepository{
 			Events: GetEvents(),
@@ -59,6 +62,7 @@ var GetRepository = NewComponent(
 )
 
 var GetScheduler = NewComponent(
+	"Scheduler",
 	func() (*Scheduler, error) {
 		return &Scheduler{}, nil
 	},
