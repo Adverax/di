@@ -7,12 +7,12 @@ import (
 
 type logger struct{}
 
-func (l *logger) Log(msg string) {
+func (l *logger) Log(component, msg string) {
 	// empty
 }
 
 var Logger interface {
-	Log(msg string)
+	Log(component, msg string)
 } = new(logger)
 
 type Initializer interface {
@@ -116,10 +116,7 @@ func (c *controller[T]) get() T {
 }
 
 func (c *controller[T]) newInstance() T {
-	if c.options.name != "" {
-		Logger.Log(fmt.Sprintf("%s: building", c.options.name))
-	}
-
+	Logger.Log(c.options.name, "building")
 	instance, err := c.builder()
 	if err != nil {
 		panic(fmt.Errorf("%s: %w", c.options.name, err))

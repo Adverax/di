@@ -34,7 +34,7 @@ func (c *component) runInit() error {
 	if err != nil {
 		return fmt.Errorf("initialization error %w", err)
 	}
-	Logger.Log(fmt.Sprintf("%s: initialized", c.name))
+	Logger.Log(c.name, "initialized")
 	return nil
 }
 
@@ -47,7 +47,7 @@ func (c *component) runDone() {
 		return
 	}
 	c.done()
-	Logger.Log(fmt.Sprintf("%s: done", c.name))
+	Logger.Log(c.name, "done")
 }
 
 type components []*component
