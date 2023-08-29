@@ -29,12 +29,15 @@ type Application interface {
 }
 
 func newApp() *App {
-	return &App{}
+	return &App{
+		dictionary: make(map[string]*component),
+	}
 }
 
 type App struct {
 	mx         sync.Mutex
 	components components
+	dictionary map[string]*component
 }
 
 func (a *App) addComponent(component *component) {
@@ -42,6 +45,7 @@ func (a *App) addComponent(component *component) {
 	defer a.mx.Unlock()
 
 	a.components = append(a.components, component)
+	a.dictionary[component.name] = component
 }
 
 func (a *App) Init(ctx context.Context) {
@@ -66,6 +70,26 @@ func (a *App) sortComponents() {
 	a.mx.Lock()
 	defer a.mx.Unlock()
 	sort.Sort(&a.components)
+}
+
+func (a *App) get(ctx context.Context, name string, builder func(ctx context.Context) *component) *component {
+	c := a.fetch(ctx, name)
+	if c != nil {
+		return c
+	}
+
+	c = builder(ctx)
+	a.addComponent(c)
+
+	return c
+}
+
+func (a *App) fetch(ctx context.Context, name string) *component {
+	a.mx.Lock()
+	defer a.mx.Unlock()
+
+	c, _ := a.dictionary[name]
+	return c
 }
 
 type AppOptions struct {

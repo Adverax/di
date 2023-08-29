@@ -21,6 +21,7 @@ type component struct {
 	state    State
 	init     func(ctx context.Context) error
 	done     func(ctx context.Context)
+	instance interface{}
 	priority int
 	name     string
 }
@@ -134,10 +135,9 @@ func NewComponent[T any](
 }
 
 type controller[T any] struct {
-	builder  Builder[T]
-	options  Options[T]
-	active   bool
-	instance T
+	builder Builder[T]
+	options Options[T]
+	active  bool
 }
 
 func (c *controller[T]) enter() {
@@ -155,13 +155,11 @@ func (c *controller[T]) get(ctx context.Context) T {
 	c.enter()
 	defer c.leave()
 
-	if isZeroVal(c.instance) {
-		c.instance = c.newInstance(ctx)
-		app := GetAppFromContext(ctx)
-		app.addComponent(c.newComponent())
-	}
-
-	return c.instance
+	app := GetAppFromContext(ctx)
+	cc := app.get(ctx, c.options.name, func(ctx context.Context) *component {
+		return c.newComponent(c.newInstance(ctx))
+	})
+	return cc.instance.(T)
 }
 
 func (c *controller[T]) newInstance(ctx context.Context) T {
@@ -173,19 +171,20 @@ func (c *controller[T]) newInstance(ctx context.Context) T {
 	return instance
 }
 
-func (c *controller[T]) newComponent() *component {
+func (c *controller[T]) newComponent(instance T) *component {
 	return &component{
 		name:     c.options.name,
 		priority: c.options.priority,
+		instance: instance,
 		init: func(ctx context.Context) error {
 			if c.options.init != nil {
-				return c.options.init(ctx, c.instance)
+				return c.options.init(ctx, instance)
 			}
 			return nil
 		},
 		done: func(ctx context.Context) {
 			if c.options.done != nil {
-				c.options.done(ctx, c.instance)
+				c.options.done(ctx, instance)
 			}
 		},
 	}
