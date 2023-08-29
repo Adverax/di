@@ -126,21 +126,33 @@ func WithDaemon(daemons ...func(ctx context.Context)) AppOption {
 }
 
 func Execute(ctx context.Context, constructor Constructor[Application], options ...AppOption) {
+	app, ctx, err := Build(ctx, constructor, options...)
+	if err != nil {
+		panic(err)
+	}
+	defer app.Done(ctx)
+
+	app.Run(ctx)
+}
+
+func Build(
+	ctx context.Context,
+	constructor Constructor[Application],
+	options ...AppOption,
+) (a Application, c context.Context, err error) {
 	app := newApp()
 	ctx = context.WithValue(ctx, ApplicationContextKey, app)
 
 	defer func() {
 		if r := recover(); r != nil {
-			err := r.(error)
-			Logger.Log("application", err.Error())
+			err = r.(error)
 		}
 	}()
 
 	application := build(ctx, constructor, options...)
 	application.Init(ctx)
-	defer application.Done(ctx)
 
-	application.Run(ctx)
+	return application, ctx, nil
 }
 
 func build(
