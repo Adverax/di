@@ -54,6 +54,7 @@ func (a *App) Init(ctx context.Context) {
 }
 
 func (a *App) Done(ctx context.Context) {
+	ctx = context.WithValue(ctx, ApplicationContextKey, a)
 	cs := a.components
 	for i := len(cs) - 1; i >= 0; i-- {
 		c := cs[i]
