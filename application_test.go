@@ -2,7 +2,6 @@ package di
 
 import (
 	"context"
-	"github.com/stretchr/testify/require"
 	"testing"
 )
 
@@ -30,14 +29,10 @@ type MyApplication struct {
 	Repository *MyRepository
 }
 
-func (a *MyApplication) Run() {
-	// your code here
-}
-
 // Declaration of components
 var GetApplication = NewComponent(
 	"MyApplication",
-	func(ctx context.Context) (*MyApplication, error) {
+	func(ctx context.Context) (Application, error) {
 		return &MyApplication{
 			App:        GetAppFromContext(ctx),
 			Events:     GetEvents(ctx),
@@ -73,13 +68,9 @@ var GetScheduler = NewComponent(
 )
 
 func TestDI(t *testing.T) {
-	ctx := context.Background()
-	app, err := Build(
-		ctx,
+	Execute(
+		context.Background(),
 		GetApplication,
 		WithWorker(GetScheduler),
 	)
-	require.NoError(t, err)
-	defer app.Done(ctx)
-	app.Run()
 }

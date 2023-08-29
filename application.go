@@ -26,6 +26,7 @@ func (c components) Swap(i, j int) {
 type Application interface {
 	Init(ctx context.Context)
 	Done(ctx context.Context)
+	Run(ctx context.Context)
 }
 
 func newApp() *App {
@@ -64,6 +65,10 @@ func (a *App) Done(ctx context.Context) {
 		c := cs[i]
 		c.runDone(ctx)
 	}
+}
+
+func (a *App) Run(ctx context.Context) {
+	// nothing to do
 }
 
 func (a *App) sortComponents() {
@@ -120,33 +125,41 @@ func WithDaemon(daemons ...func(ctx context.Context)) AppOption {
 	}
 }
 
-func Build[T Application](
+func Execute(ctx context.Context, constructor Constructor[Application], options ...AppOption) {
+	app := newApp()
+	ctx = context.WithValue(ctx, ApplicationContextKey, app)
+
+	defer func() {
+		if r := recover(); r != nil {
+			err := r.(error)
+			Logger.Log("application", err.Error())
+		}
+	}()
+
+	application := build(ctx, constructor, options...)
+	application.Init(ctx)
+	defer application.Done(ctx)
+
+	application.Run(ctx)
+}
+
+func build(
 	ctx context.Context,
-	constructor Constructor[T],
+	constructor Constructor[Application],
 	options ...AppOption,
-) (application T, err error) {
+) Application {
 	var opts AppOptions
 	for _, o := range options {
 		o(&opts)
 	}
 
-	defer func() {
-		if r := recover(); r != nil {
-			err = r.(error)
-		}
-	}()
-
-	app := newApp()
-	ctx = context.WithValue(ctx, ApplicationContextKey, app)
-
-	application = constructor(ctx)
+	application := constructor(ctx)
 
 	for _, c := range opts.constructors {
 		c(ctx)
 	}
 
-	application.Init(ctx)
-	return application, nil
+	return application
 }
 
 type ApplicationContextType int
