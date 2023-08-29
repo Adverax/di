@@ -159,15 +159,6 @@ func (c *controller[T]) get(ctx context.Context) T {
 	return cc.instance.(T)
 }
 
-func (c *controller[T]) newInstance(ctx context.Context) T {
-	Logger.Log(c.options.name, "building")
-	instance, err := c.builder(ctx)
-	if err != nil {
-		panic(fmt.Errorf("%s: %w", c.options.name, err))
-	}
-	return instance
-}
-
 func (c *controller[T]) newComponent(ctx context.Context) *component {
 	instance := c.newInstance(ctx)
 	return &component{
@@ -186,4 +177,13 @@ func (c *controller[T]) newComponent(ctx context.Context) *component {
 			}
 		},
 	}
+}
+
+func (c *controller[T]) newInstance(ctx context.Context) T {
+	Logger.Log(c.options.name, "building")
+	instance, err := c.builder(ctx)
+	if err != nil {
+		panic(fmt.Errorf("%s: %w", c.options.name, err))
+	}
+	return instance
 }
