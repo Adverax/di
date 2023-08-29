@@ -1,6 +1,7 @@
 package di
 
 import (
+	"context"
 	"github.com/stretchr/testify/require"
 	"testing"
 )
@@ -23,60 +24,62 @@ func (s *Scheduler) Start() error {
 }
 
 type MyApplication struct {
-	App // Embedding App struct
+	*App // Embedding App struct
 	// Dependency list
 	Events     *MyEvents
 	Repository *MyRepository
 }
 
-func (a *MyApplication) Start() {
+func (a *MyApplication) Run() {
 	// your code here
 }
 
 // Declaration of components
 var GetApplication = NewComponent(
 	"MyApplication",
-	func() (*MyApplication, error) {
+	func(ctx context.Context) (*MyApplication, error) {
 		return &MyApplication{
-			App:        GetApp(),
-			Events:     GetEvents(),
-			Repository: GetRepository(),
+			App:        GetAppFromContext(ctx),
+			Events:     GetEvents(ctx),
+			Repository: GetRepository(ctx),
 		}, nil
 	},
 )
 
 var GetEvents = NewComponent(
 	"MyEvents",
-	func() (*MyEvents, error) {
+	func(ctx context.Context) (*MyEvents, error) {
 		return &MyEvents{}, nil
 	},
 )
 
 var GetRepository = NewComponent(
 	"MyRepository",
-	func() (*MyRepository, error) {
+	func(ctx context.Context) (*MyRepository, error) {
 		return &MyRepository{
-			Events: GetEvents(),
+			Events: GetEvents(ctx),
 		}, nil
 	},
 )
 
 var GetScheduler = NewComponent(
 	"Scheduler",
-	func() (*Scheduler, error) {
+	func(ctx context.Context) (*Scheduler, error) {
 		return &Scheduler{}, nil
 	},
-	WithInit(func(instance *Scheduler) error {
+	WithInit(func(ctx context.Context, instance *Scheduler) error {
 		return instance.Start()
 	}),
 )
 
 func TestDI(t *testing.T) {
+	ctx := context.Background()
 	app, err := Build(
+		ctx,
 		GetApplication,
 		WithWorker(GetScheduler),
 	)
 	require.NoError(t, err)
-	defer app.Done()
-	app.Start()
+	defer app.Done(ctx)
+	app.Run()
 }

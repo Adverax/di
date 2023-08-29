@@ -1,6 +1,7 @@
 package di
 
 import (
+	"context"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -12,21 +13,21 @@ type MyComponent2 struct {
 }
 
 type Container struct {
-	Component1 func() *MyComponent1
-	Component2 func() *MyComponent2
+	Component1 func(ctx context.Context) *MyComponent1
+	Component2 func(ctx context.Context) *MyComponent2
 }
 
 func newContainer() *Container {
 	c := new(Container)
 	c.Component1 = NewComponent(
 		"Component1",
-		func() (*MyComponent1, error) {
+		func(ctx context.Context) (*MyComponent1, error) {
 			return new(MyComponent1), nil
 		},
 	)
 	c.Component2 = NewComponent(
 		"Component2",
-		func() (*MyComponent2, error) {
+		func(ctx context.Context) (*MyComponent2, error) {
 			return new(MyComponent2), nil
 		},
 	)
