@@ -64,3 +64,8 @@ func findValue(c interface{}, typ reflect.Type) reflect.Value {
 	return reflect.Value{}
 
 }
+
+// IsZeroVal check if any type is its zero value
+func isZeroVal(x interface{}) bool {
+	return x == nil || reflect.DeepEqual(x, reflect.Zero(reflect.TypeOf(x)).Interface())
+}

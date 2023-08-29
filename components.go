@@ -3,7 +3,6 @@ package di
 import (
 	"context"
 	"fmt"
-	"reflect"
 )
 
 type Builder[T any] func(ctx context.Context) (T, error)
@@ -156,9 +155,7 @@ func (c *controller[T]) get(ctx context.Context) T {
 	defer c.leave()
 
 	app := GetAppFromContext(ctx)
-	cc := app.get(ctx, c.options.name, func(ctx context.Context) *component {
-		return c.newComponent(c.newInstance(ctx))
-	})
+	cc := app.get(ctx, c.options.name, c.newComponent)
 	return cc.instance.(T)
 }
 
@@ -171,7 +168,8 @@ func (c *controller[T]) newInstance(ctx context.Context) T {
 	return instance
 }
 
-func (c *controller[T]) newComponent(instance T) *component {
+func (c *controller[T]) newComponent(ctx context.Context) *component {
+	instance := c.newInstance(ctx)
 	return &component{
 		name:     c.options.name,
 		priority: c.options.priority,
@@ -188,9 +186,4 @@ func (c *controller[T]) newComponent(instance T) *component {
 			}
 		},
 	}
-}
-
-// IsZeroVal check if any type is its zero value
-func isZeroVal(x interface{}) bool {
-	return x == nil || reflect.DeepEqual(x, reflect.Zero(reflect.TypeOf(x)).Interface())
 }
