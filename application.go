@@ -7,6 +7,8 @@ import (
 	"sync"
 )
 
+type designer func(ctx context.Context)
+
 type constructor func(ctx context.Context)
 
 type components []*component
@@ -98,6 +100,7 @@ func (a *App) fetch(ctx context.Context, name string) *component {
 }
 
 type AppOptions struct {
+	designers    []designer
 	constructors []constructor
 }
 
@@ -106,6 +109,14 @@ type AppOption func(opts *AppOptions)
 func newConstructor[T any](constructor Constructor[T]) func(ctx context.Context) {
 	return func(ctx context.Context) {
 		_ = constructor(ctx)
+	}
+}
+
+func WithDesigner(designers ...func(ctx context.Context)) AppOption {
+	return func(opts *AppOptions) {
+		for _, designer := range designers {
+			opts.designers = append(opts.designers, designer)
+		}
 	}
 }
 
@@ -124,8 +135,11 @@ func WithDaemon(daemons ...func(ctx context.Context)) AppOption {
 		}
 	}
 }
-
-func Execute(ctx context.Context, constructor Constructor[Application], options ...AppOption) {
+func Execute(
+	ctx context.Context,
+	constructor Constructor[Application],
+	options ...AppOption,
+) {
 	app, ctx := Build(ctx, constructor, options...)
 	defer app.Done(ctx)
 
@@ -154,6 +168,10 @@ func build(
 	var opts AppOptions
 	for _, o := range options {
 		o(&opts)
+	}
+
+	for _, d := range opts.designers {
+		d(ctx)
 	}
 
 	application := constructor(ctx)
