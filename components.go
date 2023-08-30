@@ -78,8 +78,8 @@ type Option[T any] func(options *Options[T])
 type Options[T any] struct {
 	name     string
 	priority int
-	init     func(ctx context.Context, instance T) error
-	done     func(ctx context.Context, instance T)
+	init     []func(ctx context.Context, instance T) error
+	done     []func(ctx context.Context, instance T)
 }
 
 func WithPriority[T any](priority int) Option[T] {
@@ -88,31 +88,33 @@ func WithPriority[T any](priority int) Option[T] {
 	}
 }
 
-func WithInit[T any](initializer func(ctx context.Context, instance T) error) Option[T] {
+func WithInit[T any](initializer ...func(ctx context.Context, instance T) error) Option[T] {
 	return func(options *Options[T]) {
-		options.init = initializer
+		options.init = append(options.init, initializer...)
 	}
 }
 
-func WithDone[T any](finalizer func(ctx context.Context, instance T)) Option[T] {
+func WithDone[T any](finalizer ...func(ctx context.Context, instance T)) Option[T] {
 	return func(options *Options[T]) {
-		options.done = finalizer
+		options.done = append(options.done, finalizer...)
 	}
 }
 
 func UseInit[T Initializer]() Option[T] {
 	return func(options *Options[T]) {
-		options.init = func(ctx context.Context, instance T) error {
+		fn := func(ctx context.Context, instance T) error {
 			return instance.Init()
 		}
+		options.init = append(options.init, fn)
 	}
 }
 
 func UseDone[T Finalizer]() Option[T] {
 	return func(options *Options[T]) {
-		options.done = func(ctx context.Context, instance T) {
+		fn := func(ctx context.Context, instance T) {
 			instance.Done()
 		}
+		options.done = append(options.done, fn)
 	}
 }
 
@@ -171,14 +173,17 @@ func (c *controller[T]) newComponent(ctx context.Context) *component {
 		priority: c.options.priority,
 		instance: instance,
 		init: func(ctx context.Context) error {
-			if c.options.init != nil {
-				return c.options.init(ctx, instance)
+			for _, init := range c.options.init {
+				err := init(ctx, instance)
+				if err != nil {
+					return fmt.Errorf("initialization error %w", err)
+				}
 			}
 			return nil
 		},
 		done: func(ctx context.Context) {
-			if c.options.done != nil {
-				c.options.done(ctx, instance)
+			for _, done := range c.options.done {
+				done(ctx, instance)
 			}
 		},
 	}

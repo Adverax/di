@@ -141,6 +141,7 @@ func WithDaemon(daemons ...func(ctx context.Context)) AppOption {
 		}
 	}
 }
+
 func Execute(
 	ctx context.Context,
 	constructor Constructor[Application],
