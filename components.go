@@ -3,6 +3,7 @@ package di
 import (
 	"context"
 	"fmt"
+	"sync"
 )
 
 type Builder[T any] func(ctx context.Context) (T, error)
@@ -124,6 +125,7 @@ func NewComponent[T any](
 			name: name,
 		},
 		builder: builder,
+		id:      enumerator(),
 	}
 
 	for _, o := range options {
@@ -137,6 +139,7 @@ type controller[T any] struct {
 	builder Builder[T]
 	options Options[T]
 	active  bool
+	id      string
 }
 
 func (c *controller[T]) enter() {
@@ -155,7 +158,7 @@ func (c *controller[T]) get(ctx context.Context) T {
 	defer c.leave()
 
 	app := GetAppFromContext(ctx)
-	cc := app.get(ctx, c.options.name, c.newComponent)
+	cc := app.get(ctx, c.id, c.newComponent)
 	return cc.instance.(T)
 }
 
@@ -187,3 +190,16 @@ func (c *controller[T]) newInstance(ctx context.Context) T {
 	}
 	return instance
 }
+
+var enumerator = func() func() string {
+	var mx sync.Mutex
+	var counter int
+
+	return func() string {
+		mx.Lock()
+		defer mx.Unlock()
+
+		counter++
+		return fmt.Sprintf("%d", counter)
+	}
+}()
