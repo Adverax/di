@@ -34,6 +34,7 @@ type Application interface {
 func newApp() *App {
 	return &App{
 		dictionary: make(map[string]*component),
+		variables:  NewVariables(nil),
 	}
 }
 
@@ -41,6 +42,11 @@ type App struct {
 	mx         sync.Mutex
 	components components
 	dictionary map[string]*component
+	variables  Variables
+}
+
+func (a *App) Variables() Variables {
+	return a.variables
 }
 
 func (a *App) addComponent(component *component) {
