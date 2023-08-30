@@ -24,6 +24,7 @@ type component struct {
 	instance interface{}
 	priority int
 	name     string
+	id       string
 }
 
 func (c *component) runInit(ctx context.Context) error {
@@ -165,6 +166,7 @@ func (c *controller[T]) get(ctx context.Context) T {
 func (c *controller[T]) newComponent(ctx context.Context) *component {
 	instance := c.newInstance(ctx)
 	return &component{
+		id:       c.id,
 		name:     c.options.name,
 		priority: c.options.priority,
 		instance: instance,

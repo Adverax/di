@@ -46,7 +46,7 @@ func (a *App) addComponent(component *component) {
 	defer a.mx.Unlock()
 
 	a.components = append(a.components, component)
-	a.dictionary[component.name] = component
+	a.dictionary[component.id] = component
 }
 
 func (a *App) Init(ctx context.Context) {
