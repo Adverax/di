@@ -6,6 +6,15 @@ import (
 	"sync"
 )
 
+type componentError struct {
+	component string
+	message   string
+}
+
+func (e *componentError) Error() string {
+	return fmt.Sprintf("%s: %s", e.component, e.message)
+}
+
 type Builder[T any] func(ctx context.Context) (T, error)
 type Constructor[T any] func(ctx context.Context) T
 
@@ -39,7 +48,7 @@ func (c *component) runInit(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("initialization error %w", err)
 	}
-	Logger.Log(c.name, "initialized")
+	Logger.Log(LogLevelDebug, c.name, "initialized")
 	return nil
 }
 
@@ -52,17 +61,26 @@ func (c *component) runDone(ctx context.Context) {
 		return
 	}
 	c.done(ctx)
-	Logger.Log(c.name, "done")
+	Logger.Log(LogLevelDebug, c.name, "done")
 }
 
 type logger struct{}
 
-func (l *logger) Log(component, msg string) {
+func (l *logger) Log(level LogLevel, component, msg string) {
 	// empty
 }
 
+type LogLevel int
+
+const (
+	LogLevelDebug LogLevel = iota
+	LogLevelInfo
+	LogLevelWarning
+	LogLevelError
+)
+
 var Logger interface {
-	Log(component, msg string)
+	Log(level LogLevel, component, msg string)
 } = new(logger)
 
 type Initializer interface {
@@ -147,7 +165,7 @@ type controller[T any] struct {
 
 func (c *controller[T]) enter() {
 	if c.active {
-		panic(fmt.Errorf("circular dependency detected"))
+		panic(&componentError{c.options.name, "circular dependency detected"})
 	}
 	c.active = true
 }
@@ -190,10 +208,10 @@ func (c *controller[T]) newComponent(ctx context.Context) *component {
 }
 
 func (c *controller[T]) newInstance(ctx context.Context) T {
-	Logger.Log(c.options.name, "building")
+	Logger.Log(LogLevelDebug, c.options.name, "building")
 	instance, err := c.builder(ctx)
 	if err != nil {
-		panic(fmt.Errorf("%s: %w", c.options.name, err))
+		panic(&componentError{c.options.name, err.Error()})
 	}
 	return instance
 }

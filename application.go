@@ -61,7 +61,7 @@ func (a *App) Init(ctx context.Context) {
 	a.sortComponents()
 	for _, c := range a.components {
 		if err := c.runInit(ctx); err != nil {
-			panic(fmt.Errorf("%s: %w", c.name, err))
+			panic(&componentError{c.name, fmt.Sprintf("init: %s", err.Error())})
 		}
 	}
 }
@@ -149,7 +149,7 @@ func Execute(
 ) {
 	app, ctx, err := Build(ctx, constructor, options...)
 	if err != nil {
-		Logger.Log("application", err.Error())
+		Logger.Log(LogLevelError, "application", err.Error())
 		return
 	}
 	defer app.Done(ctx)
