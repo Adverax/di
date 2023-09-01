@@ -194,7 +194,7 @@ func (c *controller[T]) newComponent(ctx context.Context) *component {
 			for _, init := range c.options.init {
 				err := init(ctx, instance)
 				if err != nil {
-					return fmt.Errorf("initialization error %w", err)
+					return err
 				}
 			}
 			return nil
