@@ -147,7 +147,11 @@ func Execute(
 	constructor Constructor[Application],
 	options ...AppOption,
 ) {
-	app, ctx := Build(ctx, constructor, options...)
+	app, ctx, err := Build(ctx, constructor, options...)
+	if err != nil {
+		Logger.Log("application", err.Error())
+		return
+	}
 	defer app.Done(ctx)
 
 	app.Run(ctx)
@@ -157,14 +161,20 @@ func Build(
 	ctx context.Context,
 	constructor Constructor[Application],
 	options ...AppOption,
-) (a Application, c context.Context) {
+) (a Application, c context.Context, err error) {
 	app := newApp()
 	ctx = context.WithValue(ctx, ApplicationContextKey, app)
+
+	defer func() {
+		if e := recover(); e != nil {
+			err, _ = e.(error)
+		}
+	}()
 
 	application := build(ctx, constructor, options...)
 	application.Init(ctx)
 
-	return application, ctx
+	return application, ctx, err
 }
 
 func build(
