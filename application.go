@@ -152,7 +152,7 @@ func Execute(
 		if e, ok := err.(*componentError); ok {
 			Logger.Log(LogLevelError, e.component, e.message)
 		} else {
-			Logger.Log(LogLevelError, "application", e.Error())
+			Logger.Log(LogLevelError, "application", err.Error())
 		}
 		return
 	}
