@@ -149,7 +149,11 @@ func Execute(
 ) {
 	app, ctx, err := Build(ctx, constructor, options...)
 	if err != nil {
-		Logger.Log(LogLevelError, "application", err.Error())
+		if e, ok := err.(*componentError); ok {
+			Logger.Log(LogLevelError, e.component, e.message)
+		} else {
+			Logger.Log(LogLevelError, "application", e.Error())
+		}
 		return
 	}
 	defer app.Done(ctx)
