@@ -67,7 +67,7 @@ func (c *component) runDone(ctx context.Context) {
 type logger struct{}
 
 func (l *logger) Log(level LogLevel, component, msg string) {
-	// empty
+	fmt.Printf("{%v} %s: %s\n", level, component, msg)
 }
 
 type LogLevel int
