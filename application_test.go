@@ -71,6 +71,6 @@ func TestDI(t *testing.T) {
 	Execute(
 		context.Background(),
 		GetApplication,
-		WithWorker(GetScheduler),
+		WithService(GetScheduler),
 	)
 }

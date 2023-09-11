@@ -126,7 +126,7 @@ func WithConfigurator(configurators ...func(ctx context.Context)) AppOption {
 	}
 }
 
-func WithWorker[T any](constructor ...Constructor[T]) AppOption {
+func WithService[T any](constructor ...Constructor[T]) AppOption {
 	return func(opts *AppOptions) {
 		for _, c := range constructor {
 			opts.constructors = append(opts.constructors, newConstructor(c))
