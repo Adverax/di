@@ -7,7 +7,7 @@ import (
 	"sync"
 )
 
-type designer func(ctx context.Context)
+type configurator func(ctx context.Context)
 
 type constructor func(ctx context.Context)
 
@@ -106,8 +106,8 @@ func (a *App) fetch(ctx context.Context, name string) *component {
 }
 
 type AppOptions struct {
-	designers    []designer
-	constructors []constructor
+	configurators []configurator
+	constructors  []constructor
 }
 
 type AppOption func(opts *AppOptions)
@@ -118,10 +118,10 @@ func newConstructor[T any](constructor Constructor[T]) func(ctx context.Context)
 	}
 }
 
-func WithDesigner(designers ...func(ctx context.Context)) AppOption {
+func WithConfigurator(configurators ...func(ctx context.Context)) AppOption {
 	return func(opts *AppOptions) {
-		for _, designer := range designers {
-			opts.designers = append(opts.designers, designer)
+		for _, c := range configurators {
+			opts.configurators = append(opts.configurators, c)
 		}
 	}
 }
@@ -191,8 +191,8 @@ func build(
 		o(&opts)
 	}
 
-	for _, d := range opts.designers {
-		d(ctx)
+	for _, c := range opts.configurators {
+		c(ctx)
 	}
 
 	application := constructor(ctx)
