@@ -13,4 +13,4 @@ Who needs it?
 - People who want to write tests for their code
 
 How to use it?
-See tests for examples.
+See tests for  examples.
