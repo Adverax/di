@@ -62,7 +62,7 @@ var GetScheduler = NewComponent(
 	func(ctx context.Context) (*Scheduler, error) {
 		return &Scheduler{}, nil
 	},
-	WithInit(func(ctx context.Context, instance *Scheduler) error {
+	WithComponentInit(func(ctx context.Context, instance *Scheduler) error {
 		return instance.Start()
 	}),
 )
@@ -71,6 +71,6 @@ func TestDI(t *testing.T) {
 	Execute(
 		context.Background(),
 		GetApplication,
-		WithService(GetScheduler),
+		WithAppService(GetScheduler),
 	)
 }

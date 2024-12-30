@@ -36,52 +36,33 @@ type component struct {
 	id       string
 }
 
-func (c *component) runInit(ctx context.Context) error {
-	if c.state != StateBuild {
+func (that *component) runInit(ctx context.Context, app *App) error {
+	if that.state != StateBuild {
 		return nil
 	}
-	c.state = StateInit
-	if c.init == nil {
+	that.state = StateInit
+	if that.init == nil {
 		return nil
 	}
-	err := c.init(ctx)
+	err := that.init(ctx)
 	if err != nil {
 		return fmt.Errorf("initialization error %w", err)
 	}
-	Logger.Log(LogLevelDebug, c.name, "initialized")
+	app.logger.Debugf(ctx, "Component %s initialized", that.name)
 	return nil
 }
 
-func (c *component) runDone(ctx context.Context) {
-	if c.state != StateInit {
+func (that *component) runDone(ctx context.Context, app *App) {
+	if that.state != StateInit {
 		return
 	}
-	c.state = StateDone
-	if c.done == nil {
+	that.state = StateDone
+	if that.done == nil {
 		return
 	}
-	c.done(ctx)
-	Logger.Log(LogLevelDebug, c.name, "done")
+	that.done(ctx)
+	app.logger.Debugf(ctx, "Component %s done", that.name)
 }
-
-type logger struct{}
-
-func (l *logger) Log(level LogLevel, component, msg string) {
-	fmt.Printf("{%v} %s: %s\n", level, component, msg)
-}
-
-type LogLevel int
-
-const (
-	LogLevelDebug LogLevel = iota
-	LogLevelInfo
-	LogLevelWarning
-	LogLevelError
-)
-
-var Logger interface {
-	Log(level LogLevel, component, msg string)
-} = new(logger)
 
 type Initializer interface {
 	Init() error
@@ -94,31 +75,24 @@ type Finalizer interface {
 type Option[T any] func(options *Options[T])
 
 type Options[T any] struct {
-	name     string
-	priority int
-	init     []func(ctx context.Context, instance T) error
-	done     []func(ctx context.Context, instance T)
+	name string
+	init []func(ctx context.Context, instance T) error
+	done []func(ctx context.Context, instance T)
 }
 
-func WithPriority[T any](priority int) Option[T] {
-	return func(options *Options[T]) {
-		options.priority = priority
-	}
-}
-
-func WithInit[T any](initializer ...func(ctx context.Context, instance T) error) Option[T] {
+func WithComponentInit[T any](initializer ...func(ctx context.Context, instance T) error) Option[T] {
 	return func(options *Options[T]) {
 		options.init = append(options.init, initializer...)
 	}
 }
 
-func WithDone[T any](finalizer ...func(ctx context.Context, instance T)) Option[T] {
+func WithComponentDone[T any](finalizer ...func(ctx context.Context, instance T)) Option[T] {
 	return func(options *Options[T]) {
 		options.done = append(options.done, finalizer...)
 	}
 }
 
-func UseInit[T Initializer]() Option[T] {
+func UseComponentInit[T Initializer]() Option[T] {
 	return func(options *Options[T]) {
 		fn := func(ctx context.Context, instance T) error {
 			return instance.Init()
@@ -127,7 +101,7 @@ func UseInit[T Initializer]() Option[T] {
 	}
 }
 
-func UseDone[T Finalizer]() Option[T] {
+func UseComponentDone[T Finalizer]() Option[T] {
 	return func(options *Options[T]) {
 		fn := func(ctx context.Context, instance T) {
 			instance.Done()
@@ -163,35 +137,35 @@ type controller[T any] struct {
 	id      string
 }
 
-func (c *controller[T]) enter() {
-	if c.active {
-		panic(&componentError{c.options.name, "circular dependency detected"})
+func (that *controller[T]) enter() {
+	if that.active {
+		panic(&componentError{that.options.name, "circular dependency detected"})
 	}
-	c.active = true
+	that.active = true
 }
 
-func (c *controller[T]) leave() {
-	c.active = false
+func (that *controller[T]) leave() {
+	that.active = false
 }
 
-func (c *controller[T]) get(ctx context.Context) T {
-	c.enter()
-	defer c.leave()
+func (that *controller[T]) get(ctx context.Context) T {
+	that.enter()
+	defer that.leave()
 
 	app := GetAppFromContext(ctx)
-	cc := app.get(ctx, c.id, c.newComponent)
+	cc := app.get(ctx, that.id, that.newComponent)
 	return cc.instance.(T)
 }
 
-func (c *controller[T]) newComponent(ctx context.Context) *component {
-	instance := c.newInstance(ctx)
+func (that *controller[T]) newComponent(ctx context.Context, app *App) *component {
+	app.logger.Debugf(ctx, "Component %s building", that.options.name)
+	instance := that.newInstance(ctx)
 	return &component{
-		id:       c.id,
-		name:     c.options.name,
-		priority: c.options.priority,
+		id:       that.id,
+		name:     that.options.name,
 		instance: instance,
 		init: func(ctx context.Context) error {
-			for _, init := range c.options.init {
+			for _, init := range that.options.init {
 				err := init(ctx, instance)
 				if err != nil {
 					return err
@@ -200,18 +174,17 @@ func (c *controller[T]) newComponent(ctx context.Context) *component {
 			return nil
 		},
 		done: func(ctx context.Context) {
-			for _, done := range c.options.done {
+			for _, done := range that.options.done {
 				done(ctx, instance)
 			}
 		},
 	}
 }
 
-func (c *controller[T]) newInstance(ctx context.Context) T {
-	Logger.Log(LogLevelDebug, c.options.name, "building")
-	instance, err := c.builder(ctx)
+func (that *controller[T]) newInstance(ctx context.Context) T {
+	instance, err := that.builder(ctx)
 	if err != nil {
-		panic(&componentError{c.options.name, err.Error()})
+		panic(&componentError{that.options.name, err.Error()})
 	}
 	return instance
 }
