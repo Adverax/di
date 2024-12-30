@@ -1,4 +1,4 @@
-module github.com/Adverax/di
+module github.com/adverax/di
 
 go 1.21.6
 
