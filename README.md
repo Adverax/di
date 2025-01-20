@@ -42,10 +42,10 @@ type MyRepository struct {
 	Events *MyEvents
 }
 
-type Scheduler struct {
+type MyScheduler struct {
 }
 
-func (s *Scheduler) Start() error {
+func (s *MyScheduler) Start() error {
 	// your code here
 	return nil
 }
@@ -87,8 +87,8 @@ var ComponentRepository = di.NewComponent(
 
 var ComponentScheduler = di.NewComponent(
 	"Scheduler",
-	func(ctx context.Context) (*Scheduler, error) {
-		return &Scheduler{}, nil
+	func(ctx context.Context) (*MyScheduler, error) {
+		return &MyScheduler{}, nil
 	},
 	WithComponentInit(func(ctx context.Context, instance *Scheduler) error {
 		return instance.Start()
