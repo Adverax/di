@@ -13,6 +13,7 @@ type constructor func(ctx context.Context)
 
 type components []*component
 
+// Application - interface for application
 type Application interface {
 	Init(ctx context.Context)
 	Done(ctx context.Context)
@@ -26,6 +27,7 @@ func newApp(logger log.Logger) *App {
 	}
 }
 
+// App - base implementation of Application
 type App struct {
 	mx         sync.Mutex
 	components components
@@ -95,6 +97,7 @@ func newConstructor[T any](constructor Constructor[T]) func(ctx context.Context)
 	}
 }
 
+// WithAppService - add service to application
 func WithAppService[T any](constructor ...Constructor[T]) AppOption {
 	return func(opts *AppOptions) {
 		for _, c := range constructor {
@@ -103,6 +106,7 @@ func WithAppService[T any](constructor ...Constructor[T]) AppOption {
 	}
 }
 
+// WithAppDaemon - add daemon to application
 func WithAppDaemon(daemons ...func(ctx context.Context)) AppOption {
 	return func(opts *AppOptions) {
 		for _, daemon := range daemons {
@@ -111,12 +115,14 @@ func WithAppDaemon(daemons ...func(ctx context.Context)) AppOption {
 	}
 }
 
+// WithAppLogger - set logger for application
 func WithAppLogger(logger log.Logger) AppOption {
 	return func(opts *AppOptions) {
 		opts.logger = logger
 	}
 }
 
+// Execute - primary entry point for build and run application
 func Execute(
 	ctx context.Context,
 	constructor Constructor[Application],
@@ -131,6 +137,7 @@ func Execute(
 	app.Run(ctx)
 }
 
+// Build - build application
 func Build(
 	ctx context.Context,
 	constructor Constructor[Application],
@@ -161,6 +168,7 @@ type ApplicationContextType int
 
 var ApplicationContextKey ApplicationContextType = 0
 
+// GetAppFromContext - get application from context
 func GetAppFromContext(ctx context.Context) *App {
 	app, _ := ctx.Value(ApplicationContextKey).(*App)
 	if app == nil {

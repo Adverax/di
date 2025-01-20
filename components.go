@@ -80,19 +80,22 @@ type Options[T any] struct {
 	done []func(ctx context.Context, instance T)
 }
 
+// WithComponentInit adds initializers to the component
 func WithComponentInit[T any](initializer ...func(ctx context.Context, instance T) error) Option[T] {
 	return func(options *Options[T]) {
 		options.init = append(options.init, initializer...)
 	}
 }
 
+// WithComponentDone adds finalizers to the component
 func WithComponentDone[T any](finalizer ...func(ctx context.Context, instance T)) Option[T] {
 	return func(options *Options[T]) {
 		options.done = append(options.done, finalizer...)
 	}
 }
 
-func UseComponentInit[T Initializer]() Option[T] {
+// WithComponentNativeInit adds initializer to the component
+func WithComponentNativeInit[T Initializer]() Option[T] {
 	return func(options *Options[T]) {
 		fn := func(ctx context.Context, instance T) error {
 			return instance.Init()
@@ -101,7 +104,8 @@ func UseComponentInit[T Initializer]() Option[T] {
 	}
 }
 
-func UseComponentDone[T Finalizer]() Option[T] {
+// WithComponentNativeDone adds finalizer to the component
+func WithComponentNativeDone[T Finalizer]() Option[T] {
 	return func(options *Options[T]) {
 		fn := func(ctx context.Context, instance T) {
 			instance.Done()
@@ -110,6 +114,7 @@ func UseComponentDone[T Finalizer]() Option[T] {
 	}
 }
 
+// NewComponent makes new component by wrapping it by builder func
 func NewComponent[T any](
 	name string,
 	builder Builder[T],
