@@ -63,8 +63,8 @@ func (that *App) Done(ctx context.Context) {
 	}
 }
 
-func (that *App) Run(context.Context) {
-	// nothing to do
+func (that *App) Run(ctx context.Context) {
+	<-ctx.Done()
 }
 
 func (that *App) get(ctx context.Context, name string, builder func(ctx context.Context, app *App) *component) *component {

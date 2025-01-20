@@ -3,6 +3,10 @@ package di
 import (
 	"context"
 	"fmt"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 )
 
 // Define components
@@ -154,6 +158,13 @@ func (b *MyApplicationBuilder) checkRequiredFields() error {
 	return nil
 }
 
+var ComponentEnvironment = NewComponent(
+	"MyEnvironment",
+	func(ctx context.Context) (*MyEnvironment, error) {
+		return GetEnvironmentFromContext(ctx), nil
+	},
+)
+
 // Declare components
 var ComponentApplication = NewComponent(
 	"MyApplication",
@@ -196,13 +207,6 @@ var ComponentScheduler = NewComponent(
 	}),
 )
 
-var ComponentEnvironment = NewComponent(
-	"MyEnvironment",
-	func(ctx context.Context) (*MyEnvironment, error) {
-		return GetEnvironmentFromContext(ctx), nil
-	},
-)
-
 type MyConfig struct {
 	// Your config here
 	RepositoryFileName string
@@ -223,13 +227,28 @@ func GetEnvironmentFromContext(ctx context.Context) *MyEnvironment {
 
 // Example of dependency injection usage
 func Example() {
+	// Handle signals for graceful shutdown
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+
+	ctx, cancel := context.WithCancel(context.Background())
+
+	go func() {
+		<-sigs
+		cancel()
+	}()
+
+	// Allow 5 seconds for lifecycle of our application
+	ctx, cancel2 := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel2()
+
+	// Define environment
 	env := &MyEnvironment{
 		Config: &MyConfig{
 			RepositoryFileName: "data.json",
 		},
 	}
 
-	ctx := context.Background()
 	ctx = context.WithValue(ctx, EnvironmentContextKey, env)
 
 	// Execute application
