@@ -2,62 +2,60 @@ package di
 
 import (
 	"context"
-	"testing"
+	"fmt"
 )
 
+// Define components
 type MyEvents struct {
 	// Your events here
 }
 
 type MyRepository struct {
-	// Dependency list
 	Events *MyEvents
 }
 
-type Scheduler struct {
-}
+type Scheduler struct{}
 
 func (s *Scheduler) Start() error {
-	// your code here
+	fmt.Println("Scheduler started")
 	return nil
 }
 
 type MyApplication struct {
-	*App // Embedding App struct
-	// Dependency list
+	*App
 	Events     *MyEvents
 	Repository *MyRepository
 }
 
-// Declaration of components
-var GetApplication = NewComponent(
+// Declare components
+var ComponentApplication = NewComponent(
 	"MyApplication",
 	func(ctx context.Context) (Application, error) {
 		return &MyApplication{
 			App:        GetAppFromContext(ctx),
-			Events:     GetEvents(ctx),
-			Repository: GetRepository(ctx),
+			Events:     ComponentEvents(ctx),
+			Repository: ComponentRepository(ctx),
 		}, nil
 	},
 )
 
-var GetEvents = NewComponent(
+var ComponentEvents = NewComponent(
 	"MyEvents",
 	func(ctx context.Context) (*MyEvents, error) {
 		return &MyEvents{}, nil
 	},
 )
 
-var GetRepository = NewComponent(
+var ComponentRepository = NewComponent(
 	"MyRepository",
 	func(ctx context.Context) (*MyRepository, error) {
 		return &MyRepository{
-			Events: GetEvents(ctx),
+			Events: ComponentEvents(ctx),
 		}, nil
 	},
 )
 
-var GetScheduler = NewComponent(
+var ComponentScheduler = NewComponent(
 	"Scheduler",
 	func(ctx context.Context) (*Scheduler, error) {
 		return &Scheduler{}, nil
@@ -67,10 +65,15 @@ var GetScheduler = NewComponent(
 	}),
 )
 
-func TestDI(t *testing.T) {
+// Example of dependency injection usage
+func Example() {
+	// Execute application
 	Execute(
 		context.Background(),
-		GetApplication,
-		WithAppService(GetScheduler),
+		ComponentApplication,
+		WithAppService(ComponentScheduler),
 	)
+
+	// Output:
+	// Scheduler started
 }

@@ -16,12 +16,14 @@ type CollectionOptions[W any, T any] struct {
 
 type CollectionOption[W any, T any] func(options *CollectionOptions[W, T])
 
+// WithCollectionItemOptions sets options for each item in collection
 func WithCollectionItemOptions[W any, T any](opts ...Option[W]) CollectionOption[W, T] {
 	return func(options *CollectionOptions[W, T]) {
 		options.options = append(options.options, opts...)
 	}
 }
 
+// WithCollectionItems sets items for collection
 func WithCollectionItems[W any, T any](items ...Constructor[T]) CollectionOption[W, T] {
 	return func(options *CollectionOptions[W, T]) {
 		options.items = append(options.items, items...)
