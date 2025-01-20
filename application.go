@@ -3,9 +3,12 @@ package di
 import (
 	"context"
 	"fmt"
-	"github.com/adverax/log"
 	"sync"
 )
+
+type Logger interface {
+	Debugf(ctx context.Context, format string, args ...interface{})
+}
 
 type configurator func(ctx context.Context)
 
@@ -20,7 +23,7 @@ type Application interface {
 	Run(ctx context.Context)
 }
 
-func newApp(logger log.Logger) *App {
+func newApp(logger Logger) *App {
 	return &App{
 		dictionary: make(map[string]*component),
 		logger:     logger,
@@ -32,7 +35,7 @@ type App struct {
 	mx         sync.Mutex
 	components components
 	dictionary map[string]*component
-	logger     log.Logger
+	logger     Logger
 }
 
 func (that *App) addComponent(component *component) {
@@ -86,7 +89,7 @@ func (that *App) fetch(_ context.Context, name string) *component {
 
 type AppOptions struct {
 	constructors []constructor
-	logger       log.Logger
+	logger       Logger
 }
 
 type AppOption func(opts *AppOptions)
@@ -116,7 +119,7 @@ func WithAppDaemon(daemons ...func(ctx context.Context)) AppOption {
 }
 
 // WithAppLogger - set logger for application
-func WithAppLogger(logger log.Logger) AppOption {
+func WithAppLogger(logger Logger) AppOption {
 	return func(opts *AppOptions) {
 		opts.logger = logger
 	}
@@ -179,10 +182,16 @@ func GetAppFromContext(ctx context.Context) *App {
 
 func buildAppOptions(options ...AppOption) AppOptions {
 	opts := AppOptions{
-		logger: log.NewDummyLogger(),
+		logger: &dummyLogger{},
 	}
 	for _, o := range options {
 		o(&opts)
 	}
 	return opts
+}
+
+type dummyLogger struct{}
+
+func (that *dummyLogger) Debugf(ctx context.Context, format string, args ...interface{}) {
+	// empty
 }
