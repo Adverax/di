@@ -8,7 +8,7 @@ import (
 	"sync"
 )
 
-type Variables = access.GetterSetter
+type Variables = access.ReaderWriter
 
 type Logger interface {
 	Debugf(ctx context.Context, format string, args ...interface{})
