@@ -3,8 +3,12 @@ package di
 import (
 	"context"
 	"fmt"
+	"github.com/adverax/access"
+	"github.com/adverax/types/json"
 	"sync"
 )
+
+type Variables = access.GetterSetter
 
 type Logger interface {
 	Debugf(ctx context.Context, format string, args ...interface{})
@@ -26,6 +30,7 @@ type Application interface {
 func newApp(logger Logger) *App {
 	return &App{
 		dictionary: make(map[string]*component),
+		variables:  make(json.Map),
 		logger:     logger,
 	}
 }
@@ -35,7 +40,12 @@ type App struct {
 	mx         sync.Mutex
 	components components
 	dictionary map[string]*component
+	variables  Variables
 	logger     Logger
+}
+
+func (that *App) Variables() Variables {
+	return that.variables
 }
 
 func (that *App) addComponent(component *component) {
@@ -178,6 +188,11 @@ func GetAppFromContext(ctx context.Context) *App {
 		panic(fmt.Errorf("application not found in context"))
 	}
 	return app
+}
+
+// SetAppToContext - set application to context
+func SetAppToContext(ctx context.Context, app *App) context.Context {
+	return context.WithValue(ctx, ApplicationContextKey, app)
 }
 
 func buildAppOptions(options ...AppOption) AppOptions {
